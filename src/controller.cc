@@ -5,6 +5,7 @@
 #include "cpu.h"
 extern int END;
 extern int cfd;
+int64_t WR_CNT = 0;
 namespace dramsim3 {
 
 #ifdef THERMAL
@@ -158,6 +159,15 @@ std::pair<uint64_t, int> Controller::ReturnDoneTrans(uint64_t clk) {
         if (clk >= it->complete_cycle) {
             if (it->is_write) {
                 simple_stats_.Increment("num_writes_done");
+#ifdef DEBUG
+			  				std::cout<<"DRAMSIM::WRITE RQST Enter WritePipe\n";
+#endif
+								WritePipe( it->addr , it->complete_cycle);
+#ifdef DEBUG
+			 					std::cout<<"DRAMSIM::WRITE RQST Complete WritePipe\n";
+								printf("DRAMSIM::WRITE RQST COUNT = %ld\n", WR_CNT);
+								WR_CNT++;
+#endif
             } else {
                 simple_stats_.Increment("num_reads_done");
                 simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);
@@ -372,6 +382,8 @@ void Controller::IssueCommand(const Command &cmd) {
         }
     } else if (cmd.IsWrite()) {
         // there should be only 1 write to the same location at a time
+				//printf("DRAMSIM::WRITE RQST COUNT = %ld\n", WR_CNT);
+				//WR_CNT++;
         auto it = pending_wr_q_.find(cmd.hex_addr);
         if (it == pending_wr_q_.end()) {
             std::cerr << cmd.hex_addr << " not in write queue!" << std::endl;
@@ -380,13 +392,6 @@ void Controller::IssueCommand(const Command &cmd) {
         auto wr_lat = clk_ - it->second.added_cycle + config_.write_delay;
         simple_stats_.AddValue("write_latency", wr_lat);
 
-#ifdef DEBUG
-			  std::cout<<"DRAMSIM::WRITE RQST Enter WritePipe\n";
-#endif
-				WritePipe( cmd.hex_addr , clk_ + config_.write_delay);
-#ifdef DEBUG
-			  std::cout<<"DRAMSIM::WRITE RQST Complete WritePipe\n";
-#endif
         pending_wr_q_.erase(it);
     }
     // must update stats before states (for row hits)

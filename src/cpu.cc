@@ -168,6 +168,8 @@ int TraceBasedCPU::ReadPipe(){
 #ifdef DEBUG
 			printf ("DRAMSIM::Address Token:%lu\n", trans_.addr);
       printf( "DRAMSIM::Cycle Token = %lu\n",trans_.added_cycle);
+			if(trans_.added_cycle == 9999)
+      printf( "DRAMSIM::All requests have been received!!!!\n");
 #endif			
 
       /*if(read(mfd, cmdbuf, 6) <= 0)
